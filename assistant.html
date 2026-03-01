@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Assistant">
+<title>My Personal Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161e;
+    --surface2: #1e1e2a;
+    --border: #2a2a3a;
+    --accent: #f0c040;
+    --accent2: #ff6b6b;
+    --accent3: #6bcbff;
+    --text: #f0f0f5;
+    --muted: #7070a0;
+    --bubble-user: #f0c040;
+    --bubble-ai: #1e1e2a;
+    --radius: 20px;
+  }
+
+- { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: ‘DM Sans’, sans-serif;
+background: var(–bg);
+color: var(–text);
+height: 100dvh;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+}
+
+/* Animated background */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background:
+radial-gradient(ellipse 60% 40% at 80% 10%, rgba(240,192,64,0.08) 0%, transparent 60%),
+radial-gradient(ellipse 40% 50% at 10% 80%, rgba(107,203,255,0.06) 0%, transparent 60%);
+pointer-events: none;
+z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+position: relative;
+z-index: 10;
+padding: 16px 20px 12px;
+padding-top: max(16px, env(safe-area-inset-top));
+display: flex;
+align-items: center;
+justify-content: space-between;
+border-bottom: 1px solid var(–border);
+background: rgba(14,14,18,0.85);
+backdrop-filter: blur(20px);
+}
+
+.header-left { display: flex; align-items: center; gap: 12px; }
+
+.avatar {
+width: 42px; height: 42px;
+border-radius: 14px;
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+display: flex; align-items: center; justify-content: center;
+font-size: 20px;
+box-shadow: 0 0 20px rgba(240,192,64,0.3);
+}
+
+.header-info h1 {
+font-family: ‘Syne’, sans-serif;
+font-size: 17px;
+font-weight: 700;
+letter-spacing: -0.3px;
+}
+
+.status {
+font-size: 12px;
+color: var(–muted);
+display: flex; align-items: center; gap: 5px;
+}
+.status-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: #4ade80;
+box-shadow: 0 0 6px #4ade80;
+animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.header-actions { display: flex; gap: 8px; }
+
+.icon-btn {
+width: 38px; height: 38px;
+border-radius: 12px;
+background: var(–surface2);
+border: 1px solid var(–border);
+color: var(–text);
+font-size: 16px;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+transition: all 0.2s;
+-webkit-tap-highlight-color: transparent;
+}
+.icon-btn:active { transform: scale(0.92); background: var(–border); }
+
+/* ── TABS ── */
+.tabs {
+display: flex;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+position: relative;
+z-index: 9;
+}
+.tab {
+flex: 1;
+padding: 12px;
+text-align: center;
+font-size: 13px;
+font-weight: 500;
+color: var(–muted);
+cursor: pointer;
+transition: all 0.2s;
+border-bottom: 2px solid transparent;
+-webkit-tap-highlight-color: transparent;
+}
+.tab.active {
+color: var(–accent);
+border-bottom-color: var(–accent);
+}
+
+/* ── PANELS ── */
+.panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* ── CHAT PANEL ── */
+#chat-messages {
+flex: 1;
+overflow-y: auto;
+padding: 20px 16px;
+display: flex;
+flex-direction: column;
+gap: 16px;
+-webkit-overflow-scrolling: touch;
+}
+
+.message {
+display: flex;
+flex-direction: column;
+max-width: 82%;
+animation: msgIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes msgIn {
+from { opacity: 0; transform: translateY(12px) scale(0.95); }
+to   { opacity: 1; transform: none; }
+}
+
+.message.user { align-self: flex-end; align-items: flex-end; }
+.message.ai   { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+padding: 13px 16px;
+border-radius: var(–radius);
+font-size: 15px;
+line-height: 1.55;
+white-space: pre-wrap;
+word-break: break-word;
+}
+
+.message.user .bubble {
+background: var(–bubble-user);
+color: #111;
+border-bottom-right-radius: 6px;
+font-weight: 500;
+}
+
+.message.ai .bubble {
+background: var(–bubble-ai);
+border: 1px solid var(–border);
+border-bottom-left-radius: 6px;
+color: var(–text);
+}
+
+.msg-time {
+font-size: 11px;
+color: var(–muted);
+margin-top: 4px;
+padding: 0 4px;
+}
+
+.typing-indicator {
+display: none;
+align-self: flex-start;
+padding: 14px 18px;
+background: var(–bubble-ai);
+border: 1px solid var(–border);
+border-radius: var(–radius);
+border-bottom-left-radius: 6px;
+gap: 5px;
+align-items: center;
+}
+.typing-indicator.visible { display: flex; }
+.typing-indicator span {
+width: 7px; height: 7px;
+border-radius: 50%;
+background: var(–muted);
+animation: typing 1.2s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* ── INPUT AREA ── */
+.input-area {
+padding: 12px 16px;
+padding-bottom: max(12px, env(safe-area-inset-bottom));
+background: rgba(14,14,18,0.9);
+backdrop-filter: blur(20px);
+border-top: 1px solid var(–border);
+display: flex;
+gap: 10px;
+align-items: flex-end;
+}
+
+#chat-input {
+flex: 1;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 12px 16px;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 15px;
+color: var(–text);
+resize: none;
+outline: none;
+max-height: 120px;
+line-height: 1.4;
+transition: border-color 0.2s;
+-webkit-appearance: none;
+}
+#chat-input:focus { border-color: var(–accent); }
+#chat-input::placeholder { color: var(–muted); }
+
+#send-btn {
+width: 44px; height: 44px;
+border-radius: 14px;
+background: var(–accent);
+border: none;
+color: #111;
+font-size: 18px;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0;
+transition: all 0.2s;
+-webkit-tap-highlight-color: transparent;
+}
+#send-btn:active { transform: scale(0.9); }
+#send-btn:disabled { opacity: 0.4; }
+
+/* ── MEMORY PANEL ── */
+#memory-panel {
+overflow-y: auto;
+padding: 20px 16px;
+gap: 16px;
+-webkit-overflow-scrolling: touch;
+}
+
+.memory-section {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: var(–radius);
+overflow: hidden;
+}
+
+.memory-section-header {
+padding: 14px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+border-bottom: 1px solid var(–border);
+background: var(–surface2);
+}
+
+.memory-section-header .icon { font-size: 18px; }
+
+.memory-section-header h3 {
+font-family: ‘Syne’, sans-serif;
+font-size: 14px;
+font-weight: 700;
+letter-spacing: 0.5px;
+text-transform: uppercase;
+color: var(–accent);
+flex: 1;
+}
+
+.add-btn {
+width: 28px; height: 28px;
+border-radius: 8px;
+background: var(–border);
+border: none;
+color: var(–text);
+font-size: 18px;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+-webkit-tap-highlight-color: transparent;
+transition: all 0.2s;
+}
+.add-btn:active { transform: scale(0.9); background: var(–accent); color: #111; }
+
+.memory-items { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+.memory-item {
+display: flex;
+align-items: center;
+padding: 10px 12px;
+border-radius: 12px;
+gap: 10px;
+transition: background 0.15s;
+}
+.memory-item:active { background: var(–border); }
+
+.memory-item-text {
+flex: 1;
+font-size: 14px;
+line-height: 1.4;
+color: var(–text);
+}
+
+.memory-item-key {
+font-size: 11px;
+color: var(–muted);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+margin-bottom: 2px;
+}
+
+.del-btn {
+width: 24px; height: 24px;
+border-radius: 8px;
+background: transparent;
+border: none;
+color: var(–muted);
+font-size: 14px;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+-webkit-tap-highlight-color: transparent;
+transition: all 0.15s;
+flex-shrink: 0;
+}
+.del-btn:active { color: var(–accent2); }
+
+.empty-state {
+padding: 16px;
+text-align: center;
+color: var(–muted);
+font-size: 13px;
+font-style: italic;
+}
+
+/* ── SETTINGS PANEL ── */
+#settings-panel {
+overflow-y: auto;
+padding: 20px 16px;
+gap: 12px;
+-webkit-overflow-scrolling: touch;
+}
+
+.settings-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: var(–radius);
+overflow: hidden;
+margin-bottom: 16px;
+}
+
+.settings-card-title {
+padding: 14px 16px;
+font-family: ‘Syne’, sans-serif;
+font-size: 13px;
+font-weight: 700;
+letter-spacing: 0.5px;
+text-transform: uppercase;
+color: var(–accent);
+background: var(–surface2);
+border-bottom: 1px solid var(–border);
+}
+
+.settings-row {
+padding: 14px 16px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+border-bottom: 1px solid var(–border);
+}
+.settings-row:last-child { border-bottom: none; }
+
+.settings-label {
+font-size: 13px;
+font-weight: 500;
+color: var(–muted);
+}
+
+.settings-input {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 10px 14px;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 14px;
+color: var(–text);
+outline: none;
+width: 100%;
+transition: border-color 0.2s;
+-webkit-appearance: none;
+}
+.settings-input:focus { border-color: var(–accent); }
+.settings-input[type=“password”] { letter-spacing: 2px; }
+
+.save-btn {
+width: 100%;
+padding: 14px;
+background: var(–accent);
+border: none;
+border-radius: 14px;
+font-family: ‘Syne’, sans-serif;
+font-size: 15px;
+font-weight: 700;
+color: #111;
+cursor: pointer;
+transition: all 0.2s;
+-webkit-tap-highlight-color: transparent;
+margin-top: 4px;
+}
+.save-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+.settings-hint {
+font-size: 12px;
+color: var(–muted);
+line-height: 1.5;
+padding: 0 16px 14px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+display: none;
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.7);
+backdrop-filter: blur(8px);
+z-index: 100;
+align-items: flex-end;
+justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 24px 24px 0 0;
+padding: 24px 20px;
+padding-bottom: max(24px, env(safe-area-inset-bottom));
+width: 100%;
+max-width: 600px;
+animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slideUp {
+from { transform: translateY(100%); }
+to   { transform: none; }
+}
+
+.modal h2 {
+font-family: ‘Syne’, sans-serif;
+font-size: 18px;
+font-weight: 800;
+margin-bottom: 16px;
+}
+
+.modal-input {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 12px 14px;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 15px;
+color: var(–text);
+outline: none;
+width: 100%;
+margin-bottom: 8px;
+-webkit-appearance: none;
+}
+.modal-input:focus { border-color: var(–accent); }
+
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+.modal-btn {
+flex: 1;
+padding: 13px;
+border-radius: 12px;
+font-family: ‘Syne’, sans-serif;
+font-size: 14px;
+font-weight: 700;
+cursor: pointer;
+border: none;
+-webkit-tap-highlight-color: transparent;
+transition: all 0.15s;
+}
+.modal-btn:active { transform: scale(0.96); }
+.modal-btn.primary { background: var(–accent); color: #111; }
+.modal-btn.secondary { background: var(–border); color: var(–text); }
+
+/* ── TOAST ── */
+.toast {
+position: fixed;
+top: max(80px, calc(env(safe-area-inset-top) + 70px));
+left: 50%;
+transform: translateX(-50%) translateY(-20px);
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 10px 18px;
+font-size: 13px;
+font-weight: 500;
+color: var(–text);
+z-index: 200;
+opacity: 0;
+transition: all 0.3s;
+white-space: nowrap;
+pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 0; }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="avatar">🤖</div>
+    <div class="header-info">
+      <h1 id="assistant-name-display">My Assistant</h1>
+      <div class="status"><div class="status-dot"></div><span>Ready to chat</span></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="clearChat()" title="Clear chat">🗑️</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('chat')">💬 Chat</div>
+  <div class="tab" onclick="switchTab('memory')">🧠 Memory</div>
+  <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+</div>
+
+<!-- CHAT PANEL -->
+
+<div class="panel active" id="chat-panel">
+  <div id="chat-messages">
+    <div class="message ai">
+      <div class="bubble" id="welcome-bubble">Hey there! 👋 I'm your witty personal assistant. Set me up with your API key in Settings, then tell me about yourself in Memory — the more you share, the better I get! What's on your mind?</div>
+      <div class="msg-time">Just now</div>
+    </div>
+  </div>
+  <div class="typing-indicator" id="typing">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="input-area">
+    <textarea id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
+    <button id="send-btn" onclick="sendMessage()">↑</button>
+  </div>
+</div>
+
+<!-- MEMORY PANEL -->
+
+<div class="panel" id="memory-panel">
+
+  <div class="memory-section">
+    <div class="memory-section-header">
+      <span class="icon">👤</span>
+      <h3>Basic Info</h3>
+      <button class="add-btn" onclick="openModal('basic')">+</button>
+    </div>
+    <div class="memory-items" id="mem-basic"></div>
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-header">
+      <span class="icon">🎯</span>
+      <h3>Hobbies & Interests</h3>
+      <button class="add-btn" onclick="openModal('hobbies')">+</button>
+    </div>
+    <div class="memory-items" id="mem-hobbies"></div>
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-header">
+      <span class="icon">🚀</span>
+      <h3>Goals & Priorities</h3>
+      <button class="add-btn" onclick="openModal('goals')">+</button>
+    </div>
+    <div class="memory-items" id="mem-goals"></div>
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-header">
+      <span class="icon">💡</span>
+      <h3>Preferences & Pet Peeves</h3>
+      <button class="add-btn" onclick="openModal('prefs')">+</button>
+    </div>
+    <div class="memory-items" id="mem-prefs"></div>
+  </div>
+
+  <div class="memory-section">
+    <div class="memory-section-header">
+      <span class="icon">❤️</span>
+      <h3>People in My Life</h3>
+      <button class="add-btn" onclick="openModal('people')">+</button>
+    </div>
+    <div class="memory-items" id="mem-people"></div>
+  </div>
+
+</div>
+
+<!-- SETTINGS PANEL -->
+
+<div class="panel" id="settings-panel">
+  <div class="settings-card">
+    <div class="settings-card-title">🤖 Assistant Personality</div>
+    <div class="settings-row">
+      <div class="settings-label">Assistant Name</div>
+      <input type="text" class="settings-input" id="assistant-name-input" placeholder="e.g. Sparky, Aria, Max...">
+    </div>
+    <div class="settings-row">
+      <div class="settings-label">Custom Personality Notes (optional)</div>
+      <input type="text" class="settings-input" id="personality-input" placeholder="e.g. loves puns, uses movie references...">
+    </div>
+  </div>
+
+<button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+
+</div>
+
+<!-- ADD MEMORY MODAL -->
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <h2 id="modal-title">Add Memory</h2>
+    <input type="text" class="modal-input" id="modal-key" placeholder="Label (e.g. Name, Job, Partner's name...)">
+    <input type="text" class="modal-input" id="modal-value" placeholder="Value (e.g. Alex, Designer, Jamie...)">
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="saveMemoryItem()">Add ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let settings = JSON.parse(localStorage.getItem('pa_settings') || '{}');
+let memory = JSON.parse(localStorage.getItem('pa_memory') || '{"basic":[],"hobbies":[],"goals":[],"prefs":[],"people":[]}');
+let chatHistory = [];
+let currentModalSection = '';
+
+// ── INIT ──
+function init() {
+  if (settings.apiKey) document.getElementById('api-key-input').value = settings.apiKey;
+  if (settings.name) {
+    document.getElementById('assistant-name-input').value = settings.name;
+    document.getElementById('assistant-name-display').textContent = settings.name;
+  }
+  if (settings.personality) document.getElementById('personality-input').value = settings.personality;
+  renderAllMemory();
+  autoResizeTextarea();
+}
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['chat','memory','settings'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(name + '-panel').classList.add('active');
+}
+
+// ── SETTINGS ──
+function saveSettings() {
+  settings.apiKey = document.getElementById('api-key-input').value.trim();
+  settings.name = document.getElementById('assistant-name-input').value.trim() || 'My Assistant';
+  settings.personality = document.getElementById('personality-input').value.trim();
+  localStorage.setItem('pa_settings', JSON.stringify(settings));
+  document.getElementById('assistant-name-display').textContent = settings.name;
+  showToast('Settings saved! ✓');
+}
+
+// ── MEMORY ──
+const sectionLabels = {
+  basic: 'Basic Info', hobbies: 'Hobbies & Interests',
+  goals: 'Goals & Priorities', prefs: 'Preferences & Pet Peeves', people: 'People in My Life'
+};
+
+function openModal(section) {
+  currentModalSection = section;
+  document.getElementById('modal-title').textContent = 'Add to ' + sectionLabels[section];
+  document.getElementById('modal-key').value = '';
+  document.getElementById('modal-value').value = '';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('modal-key').focus(), 300);
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
+
+function saveMemoryItem() {
+  const key = document.getElementById('modal-key').value.trim();
+  const value = document.getElementById('modal-value').value.trim();
+  if (!key || !value) { showToast('Fill in both fields!'); return; }
+  memory[currentModalSection].push({ key, value, id: Date.now() });
+  localStorage.setItem('pa_memory', JSON.stringify(memory));
+  renderMemorySection(currentModalSection);
+  closeModal();
+  showToast('Memory saved! 🧠');
+}
+
+function deleteMemoryItem(section, id) {
+  memory[section] = memory[section].filter(i => i.id !== id);
+  localStorage.setItem('pa_memory', JSON.stringify(memory));
+  renderMemorySection(section);
+}
+
+function renderMemorySection(section) {
+  const container = document.getElementById('mem-' + section);
+  const items = memory[section];
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state">Nothing here yet — tap + to add!</div>';
+    return;
+  }
+  container.innerHTML = items.map(item => `
+    <div class="memory-item">
+      <div class="memory-item-text">
+        <div class="memory-item-key">${escHtml(item.key)}</div>
+        ${escHtml(item.value)}
+      </div>
+      <button class="del-btn" onclick="deleteMemoryItem('${section}', ${item.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderAllMemory() {
+  ['basic','hobbies','goals','prefs','people'].forEach(renderMemorySection);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── CHAT ──
+function buildSystemPrompt() {
+  const name = settings.name || 'Your Assistant';
+  const personality = settings.personality ? `Additional personality notes: ${settings.personality}.` : '';
+  
+  let memStr = '';
+  const allItems = [
+    ...memory.basic.map(i => `${i.key}: ${i.value}`),
+    ...memory.hobbies.map(i => `Hobby/Interest - ${i.key}: ${i.value}`),
+    ...memory.goals.map(i => `Goal/Priority - ${i.key}: ${i.value}`),
+    ...memory.prefs.map(i => `Preference/Pet Peeve - ${i.key}: ${i.value}`),
+    ...memory.people.map(i => `Person in their life - ${i.key}: ${i.value}`),
+  ];
+  if (allItems.length) {
+    memStr = `\n\nWhat you know about the user:\n${allItems.join('\n')}`;
+  }
+
+  return `You are ${name}, a witty and fun personal AI assistant. Your personality: sharp wit, clever humor, playful banter, light sarcasm when appropriate, pop culture references, fun analogies — but always genuinely helpful and caring underneath. You remember everything about the user and naturally weave that knowledge into conversations. You never ask for info you already have. Be concise but memorable. ${personality}${memStr}`;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+
+  addMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  showTyping(true);
+
+  try {
+    const response = await fetch('https://personalassistant.christopher-c-poulton.workers.dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: buildSystemPrompt(),
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      showTyping(false);
+      addMessage('ai', `Oops! ${data.error.message}`);
+      document.getElementById('send-btn').disabled = false;
+      return;
+    }
+
+    const reply = data.content[0].text;
+    chatHistory.push({ role: 'assistant', content: reply });
+    showTyping(false);
+    addMessage('ai', reply);
+
+  } catch (err) {
+    showTyping(false);
+    addMessage('ai', "Hmm, something went wrong connecting to the API. Check your key and internet connection!");
+  }
+
+  document.getElementById('send-btn').disabled = false;
+}
+
+function addMessage(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const now = new Date();
+  const time = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  div.innerHTML = `
+    <div class="bubble">${escHtml(text)}</div>
+    <div class="msg-time">${time}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping(show) {
+  const t = document.getElementById('typing');
+  t.classList.toggle('visible', show);
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function clearChat() {
+  chatHistory = [];
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = `
+    <div class="message ai">
+      <div class="bubble">Fresh start! 🧹 Memory wiped clean... well, the chat anyway. I still remember everything important about you. What's up?</div>
+      <div class="msg-time">Just now</div>
+    </div>`;
+  showToast('Chat cleared!');
+}
+
+// ── INPUT AUTO-RESIZE ──
+function autoResizeTextarea() {
+  const ta = document.getElementById('chat-input');
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+
+</body>
+</html>
